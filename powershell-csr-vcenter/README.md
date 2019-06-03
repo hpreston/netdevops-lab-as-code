@@ -1,5 +1,7 @@
 # Deploying CSR1000v to vCenter from OVA with PowerShell
 
+[![published](https://static.production.devnetcloud.com/codeexchange/assets/images/devnet-published.svg)](https://developer.cisco.com/codeexchange/github/repo/hpreston/netdevops-lab-as-code)
+
 In this example we'll deploy a Cisco CSR1000v to vCenter completely with code, no GUI needed.  
 
 ## Requirements 
