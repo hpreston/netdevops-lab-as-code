@@ -119,4 +119,5 @@ $temp = Wait-Tools -VM $csr
 
 
 Write-Host "Deployment complete."
+Write-Host "New CSR VM named $vmName with hostname $csr_hostname has IP $csr_mgmtIPCidr and credentials of $csr_username / $csr_password"
 Disconnect-VIServer -Confirm:$false
