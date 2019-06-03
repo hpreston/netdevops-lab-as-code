@@ -17,7 +17,7 @@ Param (
              HelpMessage="Location of CSR OVA file to deploy.")][string]$csrOvfPath,
 
   [Parameter(Mandatory=$false,
-             HelpMessage="CSR Hostname")][string]$csr_hostname "csr1000v",
+             HelpMessage="CSR Hostname")][string]$csr_hostname = "csr1000v",
   [Parameter(Mandatory=$false,
              HelpMessage="CSR Domain Name")][string]$csr_domainName = "lab.intra",
   [Parameter(Mandatory=$false,
