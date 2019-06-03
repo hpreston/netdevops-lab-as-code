@@ -46,28 +46,27 @@ Param (
 $date = Get-Date
 $datestamp = -join($date.Year, "-", $date.Month, "-", $date.Day)
 
+# Connect to vCenter
 Connect-VIServer $vCenterServerHost -User $vCenterUsername -Password $vCenterPassword
 $vcenter = $global:DefaultVIServer
 
+# Make sure connected successfully.
 if ($vcenter -eq $null) {
   Write-Host "Error connecting to vCenter"
   Write-Host $Error[0]
   Exit
 }
 
-# Get Cluster
+# Get Host Cluster and Host to deploy to.
 $cluster = Get-Cluster -Name $computeCluster
-# $resourcePoolGold = Get-ResourcePool -Name "Gold-Images"
-# $resourcePool = Get-ResourcePool -Name $sandboxCode -Location $resourcePoolGold
-# $vmFolder = Get-Folder -Name "sbx-$sandboxCode"
-
 $vms = Get-VMHost -Location $cluster -State Connected
 $vmhost = $vms[0]
 
+# Read in OVF Configuration details
 $csrOvfConfig = Get-OvfConfiguration -Ovf $csrOvfPath
-
 $csrConfigHash = $csrOvfConfig.ToHashTable()
 
+# Configure CSR OVA App Details
 $csrConfigHash["com.cisco.csr1000v.hostname.1"]=$csr_hostname
 $csrConfigHash["com.cisco.csr1000v.domain-name.1"]=$csr_domainName
 $csrConfigHash["com.cisco.csr1000v.login-username.1"]=$csr_username
@@ -95,20 +94,21 @@ $csrConfigHash["NetworkMapping.GigabitEthernet1"]=$csr_gig1Portgroup
 $csrConfigHash["NetworkMapping.GigabitEthernet2"]=$csr_gig2Portgroup
 $csrConfigHash["NetworkMapping.GigabitEthernet3"]=$csr_gig3Portgroup
 
-
+# Deploy OVA to vCenter
 Write-Host "Creating new VM from OVA $csrOvfPath named $vmName on PortGroup $csr_gig1Portgroup"
-# $csr = Import-VApp $csrOvfPath -Name $vmName -OvfConfiguration $csrConfigHash -VMHost $vmhost -Location $resourcePool
 $csr = Import-VApp $csrOvfPath -Name $vmName -OvfConfiguration $csrConfigHash -VMHost $vmhost
 
-# Move-VM $csr -InventoryLocation $vmFolder
+# Increase CPU/RAM on VM
 Set-VM $csr -NumCpu 4 -MemoryGB 8 -Confirm:$false
 
+# Add Notes to VM with deploy info
 $notes = "Created On: $datestamp by $vCenterUsername
 IP Address: $csr_mgmtIPCidr
 Username: $csr_username
 Password: $csr_password"
 $temp = Set-VM $csr -Confirm:$false -Notes $notes
 
+# Starting VM
 Write-Host "VM Created, now starting it."
 $temp = Start-VM $csr
 
@@ -117,7 +117,8 @@ Write-Host "Waiting 6 minutes to allow the CSR to install and configure."
 Start-Sleep -s 360
 $temp = Wait-Tools -VM $csr
 
+# Disconnect from vCenter
+Disconnect-VIServer -Confirm:$false
 
 Write-Host "Deployment complete."
 Write-Host "New CSR VM named $vmName with hostname $csr_hostname has IP $csr_mgmtIPCidr and credentials of $csr_username / $csr_password"
-Disconnect-VIServer -Confirm:$false
