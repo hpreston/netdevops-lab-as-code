@@ -1,28 +1,46 @@
 Param (
-  [Parameter(Mandatory=$true)][string]$vCenterServerHost,
-  [Parameter(Mandatory=$true)][string]$vCenterUsername,
-  [Parameter(Mandatory=$true)][string]$vCenterPassword,
-  [Parameter(Mandatory=$true)][string]$computeCluster,
+  [Parameter(Mandatory=$true,
+             HelpMessage="vCenter IP or FQDN")][string]$vCenterServerHost,
+  [Parameter(Mandatory=$true,
+             HelpMessage="vCenter User Account")][string]$vCenterUsername,
+  [Parameter(Mandatory=$true,
+             HelpMessage="vCenter User Password")][string]$vCenterPassword,
 
 
-  [Parameter(Mandatory=$true)][string]$vmName,
-  [Parameter(Mandatory=$true)][string]$csrOvfPath,
-
-  [Parameter(Mandatory=$true)][string]$hostname,
-  [Parameter(Mandatory=$true)][string]$domainName,
-  [Parameter(Mandatory=$true)][string]$username,
-  [Parameter(Mandatory=$true)][string]$password,
+  [Parameter(Mandatory=$true,
+             HelpMessage="vCenter Compute Cluster to deploy CSR onto.")][string]$computeCluster,
 
 
+  [Parameter(Mandatory=$true,
+             HelpMessage="Name of the VM in vCenter")][string]$vmName,
+  [Parameter(Mandatory=$true,
+             HelpMessage="Location of CSR OVA file to deploy.")][string]$csrOvfPath,
 
-  [Parameter(Mandatory=$true)][string]$mgmtIPCidr,
-  [Parameter(Mandatory=$true)][string]$mgmtNetwork,
-  [Parameter(Mandatory=$true)][string]$mgmtGateway,
+  [Parameter(Mandatory=$false,
+             HelpMessage="CSR Hostname")][string]$csr_hostname "csr1000v",
+  [Parameter(Mandatory=$false,
+             HelpMessage="CSR Domain Name")][string]$csr_domainName = "lab.intra",
+  [Parameter(Mandatory=$false,
+             HelpMessage="CSR Admin Username")][string]$csr_username = "developer",
+  [Parameter(Mandatory=$false,
+             HelpMessage="CSR Admin Password")][string]$csr_password = "C1sco12345",
 
 
-  [Parameter(Mandatory=$true)][string]$gig1Portgroup,
-  [Parameter(Mandatory=$true)][string]$gig2Portgroup,
-  [Parameter(Mandatory=$true)][string]$gig3Portgroup
+
+  [Parameter(Mandatory=$true,
+             HelpMessage="CSR Mgmt IP Address as CIDR (ex. 192.168.1.10/24)")][string]$csr_mgmtIPCidr,
+  [Parameter(Mandatory=$true,
+             HelpMessage="CSR Mgmt network gateway.")][string]$csr_mgmtGateway,
+  [Parameter(Mandatory=$false,
+             HelpMessage="Source for mgmt traffic (provide 0.0.0.0/0 to allow ALL mgmt sources)")][string]$csr_mgmtNetwork = "0.0.0.0/0",
+
+
+  [Parameter(Mandatory=$true,
+             HelpMessage="vCenter PortGroup for GigEthernet1")][string]$csr_gig1Portgroup,
+  [Parameter(Mandatory=$true,
+             HelpMessage="vCenter PortGroup for GigEthernet2")][string]$csr_gig2Portgroup,
+  [Parameter(Mandatory=$true,
+             HelpMessage="vCenter PortGroup for GigEthernet3")][string]$csr_gig3Portgroup
 )
 
 $date = Get-Date
@@ -50,16 +68,16 @@ $csrOvfConfig = Get-OvfConfiguration -Ovf $csrOvfPath
 
 $csrConfigHash = $csrOvfConfig.ToHashTable()
 
-$csrConfigHash["com.cisco.csr1000v.hostname.1"]=$hostname
-$csrConfigHash["com.cisco.csr1000v.domain-name.1"]=$domainName
-$csrConfigHash["com.cisco.csr1000v.login-username.1"]=$username
-$csrConfigHash["com.cisco.csr1000v.login-password.1"]=$password
-$csrConfigHash["com.cisco.csr1000v.privilege-password.1"]=$password
+$csrConfigHash["com.cisco.csr1000v.hostname.1"]=$csr_hostname
+$csrConfigHash["com.cisco.csr1000v.domain-name.1"]=$csr_domainName
+$csrConfigHash["com.cisco.csr1000v.login-username.1"]=$csr_username
+$csrConfigHash["com.cisco.csr1000v.login-password.1"]=$csr_password
+$csrConfigHash["com.cisco.csr1000v.privilege-password.1"]=$csr_password
 
 $csrConfigHash["com.cisco.csr1000v.mgmt-interface.1"]="GigabitEthernet1"
-$csrConfigHash["com.cisco.csr1000v.mgmt-ipv4-addr.1"]=$mgmtIPCidr
-$csrConfigHash["com.cisco.csr1000v.mgmt-ipv4-network.1"]=$mgmtNetwork
-$csrConfigHash["com.cisco.csr1000v.mgmt-ipv4-gateway.1"]=$mgmtGateway
+$csrConfigHash["com.cisco.csr1000v.mgmt-ipv4-addr.1"]=$csr_mgmtIPCidr
+$csrConfigHash["com.cisco.csr1000v.mgmt-ipv4-network.1"]=$csr_mgmtNetwork
+$csrConfigHash["com.cisco.csr1000v.mgmt-ipv4-gateway.1"]=$csr_mgmtGateway
 $csrConfigHash["com.cisco.csr1000v.mgmt-vlan.1"]=""
 
 $csrConfigHash["com.cisco.csr1000v.enable-ssh-server.1"]="True"
@@ -73,12 +91,12 @@ $csrConfigHash["com.cisco.csr1000v.remote-mgmt-ipv4-addr.1"]=""
 $csrConfigHash["com.cisco.csr1000v.pnsc-agent-local-port.1"]=""
 $csrConfigHash["com.cisco.csr1000v.pnsc-shared-secret-key.1"]=""
 
-$csrConfigHash["NetworkMapping.GigabitEthernet1"]=$gig1Portgroup
-$csrConfigHash["NetworkMapping.GigabitEthernet2"]=$gig2Portgroup
-$csrConfigHash["NetworkMapping.GigabitEthernet3"]=$gig3Portgroup
+$csrConfigHash["NetworkMapping.GigabitEthernet1"]=$csr_gig1Portgroup
+$csrConfigHash["NetworkMapping.GigabitEthernet2"]=$csr_gig2Portgroup
+$csrConfigHash["NetworkMapping.GigabitEthernet3"]=$csr_gig3Portgroup
 
 
-Write-Host "Creating new VM from OVA $csrOvfPath named $vmName on PortGroup $portgroupname"
+Write-Host "Creating new VM from OVA $csrOvfPath named $vmName on PortGroup $csr_gig1Portgroup"
 # $csr = Import-VApp $csrOvfPath -Name $vmName -OvfConfiguration $csrConfigHash -VMHost $vmhost -Location $resourcePool
 $csr = Import-VApp $csrOvfPath -Name $vmName -OvfConfiguration $csrConfigHash -VMHost $vmhost
 
@@ -86,9 +104,9 @@ $csr = Import-VApp $csrOvfPath -Name $vmName -OvfConfiguration $csrConfigHash -V
 Set-VM $csr -NumCpu 4 -MemoryGB 8 -Confirm:$false
 
 $notes = "Created On: $datestamp by $vCenterUsername
-IP Address: $mgmtIPCidr
-Username: $username
-Password: $password"
+IP Address: $csr_mgmtIPCidr
+Username: $csr_username
+Password: $csr_password"
 $temp = Set-VM $csr -Confirm:$false -Notes $notes
 
 Write-Host "VM Created, now starting it."
