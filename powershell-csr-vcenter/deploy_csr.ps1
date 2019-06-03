@@ -22,7 +22,7 @@ Param (
 
   [Parameter(Mandatory=$true)][string]$gig1Portgroup,
   [Parameter(Mandatory=$true)][string]$gig2Portgroup,
-  [Parameter(Mandatory=$true)][string]$gig3Portgroup,
+  [Parameter(Mandatory=$true)][string]$gig3Portgroup
 )
 
 $date = Get-Date
